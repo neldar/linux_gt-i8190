@@ -626,6 +626,21 @@ config USB_SWITCHER
 	bool "USB Switch support"
 	help
 	  Say Y to enable support for USB switch devices.
+	  
+config GENERIC_BLN
+	bool "Generic BLN support for backlight notification"
+	depends on SYSFS && EXPERIMENTAL
+	default y
+	help
+		Say Y here to enable the backlight notification
+		for android led-notification (modified liblight needed)
+         
+config GENERIC_BLN_EMULATE_BUTTONS_LED
+	bool "Emulate buttons led"
+	depends on GENERIC_BLN && EXPERIMENTAL
+	default n
+	help
+		Say Y here to simulate buttons led
 
 source "drivers/misc/Kconfig.stm"
 source "drivers/misc/c2port/Kconfig"
