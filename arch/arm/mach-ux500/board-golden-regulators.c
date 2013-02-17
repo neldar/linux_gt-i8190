@@ -900,6 +900,10 @@ struct regulator_init_data golden_ab8505_regulators[AB8505_NUM_REGULATORS] = {
 					REGULATOR_CHANGE_MODE,
 			.valid_modes_mask = REGULATOR_MODE_NORMAL |
 					REGULATOR_MODE_IDLE,
+			.state_mem = {
+					.disabled = 0,
+					.enabled = 1,
+			},
 		},
 		.num_consumer_supplies = ARRAY_SIZE(ab8505_vaux4_consumers),
 		.consumer_supplies = ab8505_vaux4_consumers,
