@@ -1552,18 +1552,14 @@ struct tc360_data *bln_tc360_data;
 
 static int tc360_enable_touchkey_bln(int led_mask)
 {
-
-	bln_tc360_data->pdata->led_power(true);
+	i2c_smbus_write_byte_data(bln_tc360_data->client, TC360_CMD, TC360_CMD_LED_ON);
 
 	return 0;
 }
 
 static int tc360_disable_touchkey_bln(int led_mask)
 {
-#if 0
 	i2c_smbus_write_byte_data(bln_tc360_data->client, TC360_CMD, TC360_CMD_LED_OFF);
-#endif
-	bln_tc360_data->pdata->led_power(false);
 
 	return 0;
 }
@@ -1571,32 +1567,18 @@ static int tc360_disable_touchkey_bln(int led_mask)
 
 static int tc360_power_on(void)
 {
-#if 0
-	struct regulator *r;
-
-	r = regulator_get(NULL, "v_led_3v3");
-
-	if (!IS_ERR(r)) {
-		r->rdev->constraints->state_mem.enabled = 1;
-		r->rdev->constraints->state_mem.disabled = 0;
-	}
-
 	bln_tc360_data->pdata->power(true);
 	msleep(TC360_POWERON_DELAY);
-	i2c_smbus_write_byte_data(bln_tc360_data->client, TC360_CMD, TC360_CMD_LED_ON);
-#endif
+	bln_tc360_data->pdata->led_power(true);
+
 	return 0;
 }
 
 static int tc360_power_off(void)
 {
-#if 0
-	struct regulator *r;
-	r = regulator_get(NULL, "v_led_3v3");
-	r->rdev->constraints->state_mem.enabled = 0;
-	r->rdev->constraints->state_mem.disabled = 1;
-	//bln_tc360_data->pdata->power(false);
-#endif
+	bln_tc360_data->pdata->led_power(false);
+	bln_tc360_data->pdata->power(false);
+
 	return 0;
 }
 
