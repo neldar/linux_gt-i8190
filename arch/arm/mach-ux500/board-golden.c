@@ -1304,6 +1304,13 @@ int tc360_keycodes[] = {KEY_MENU, KEY_BACK};
 static struct regulator *tc360_vdd_regulator = NULL;
 static struct regulator *tc360_vled_regulator = NULL;
 
+static void set_tc360_vled_regulator_state_mem_constraint(bool on) {
+	pr_info("%s: on=%i\n", __FUNCTION__, on);
+
+	tc360_vled_regulator->rdev->constraints->state_mem.enabled = on;
+	tc360_vled_regulator->rdev->constraints->state_mem.disabled = !on;
+}
+
 static int tc360_setup_power(struct device *dev, bool setup)
 {
 	int min_uV, max_uV;
@@ -1461,6 +1468,8 @@ struct tc360_platform_data tc360_pdata = {
 	.pin_configure = tc360_pin_configure,
 	.int_set_pull = tc360_int_set_pull,
 	.touchscreen_is_pressed = &touchscreen_is_pressed,
+	.set_vled_regulator_state_mem_constraint = 
+		set_tc360_vled_regulator_state_mem_constraint,
 };
 
 static int tc360_init(void)

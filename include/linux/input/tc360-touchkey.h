@@ -15,6 +15,24 @@
 
 #define TC360_DEVICE	"tc360"
 
+/*
+ * struct regulator
+ *
+ * One for each consumer device.
+ * Keep this in sync with drivers/regulator/core.c.
+ */
+struct regulator {
+	struct device *dev;
+	struct list_head list;
+	int uA_load;
+	int min_uV;
+	int max_uV;
+	char *supply_name;
+	struct device_attribute dev_attr;
+	struct regulator_dev *rdev;
+	int use;
+};
+
 enum {
 	TC360_SUSPEND_WITH_POWER_OFF = 0,
 	TC360_SUSPEND_WITH_SLEEP_CMD,
@@ -37,6 +55,7 @@ struct tc360_platform_data {
 	void	(*led_power)(bool);
 	void	(*pin_configure)(bool to_gpios);
 	void	(*int_set_pull)(bool);
+	void	(*set_vled_regulator_state_mem_constraint)(bool);
 };
 
 #define SEC_FAC_TK
