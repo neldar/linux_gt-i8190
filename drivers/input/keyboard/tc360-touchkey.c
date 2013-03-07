@@ -1567,7 +1567,6 @@ static int tc360_power_on(void)
 	bln_tc360_data->pdata->power(true);
 	msleep(TC360_POWERON_DELAY);
 	bln_tc360_data->pdata->led_power(true);
-	bln_tc360_data->pdata->set_vled_regulator_state_mem_constraint(true);
 
 	return 0;
 }
@@ -1576,7 +1575,6 @@ static int tc360_power_off(void)
 {
 	bln_tc360_data->pdata->led_power(false);
 	bln_tc360_data->pdata->power(false);
-	bln_tc360_data->pdata->set_vled_regulator_state_mem_constraint(false);
 
 	return 0;
 }
