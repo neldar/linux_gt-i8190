@@ -637,10 +637,17 @@ config GENERIC_BLN
          
 config GENERIC_BLN_EMULATE_BUTTONS_LED
 	bool "Emulate buttons led"
-	depends on GENERIC_BLN && EXPERIMENTAL
+	depends on GENERIC_BLN
 	default n
 	help
 		Say Y here to simulate buttons led
+		
+config GENERIC_BLN_USE_WAKELOCK
+	bool "Use a kernel wakelock to retain the leds enabled in suspend."
+	depends on GENERIC_BLN
+	default n
+	help
+		Say Y here use the wakelock implementation of the bln driver
 
 source "drivers/misc/Kconfig.stm"
 source "drivers/misc/c2port/Kconfig"
