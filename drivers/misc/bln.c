@@ -15,6 +15,9 @@
 #include <linux/miscdevice.h>
 #include <linux/bln.h>
 #include <linux/mutex.h>
+#ifdef CONFIG_GENERIC_BLN_USE_WAKELOCK
+#include <linux/wakelock.h>
+#endif
 
 static bool bln_enabled = false;
 static bool bln_ongoing = false; /* ongoing LED Notification */
@@ -23,6 +26,11 @@ static bool bln_suspended = false; /* is system suspended */
 static struct bln_implementation *bln_imp = NULL;
 
 static long unsigned int notification_led_mask = 0x0;
+
+#ifdef CONFIG_GENERIC_BLN_USE_WAKELOCK
+static bool use_wakelock = true;
+static struct wake_lock bln_wake_lock;
+#endif
 
 #ifdef CONFIG_GENERIC_BLN_EMULATE_BUTTONS_LED
 static bool buttons_led_enabled = false;
@@ -65,14 +73,26 @@ static void bln_disable_backlights(int mask)
 
 static void bln_power_on(void)
 {
-	if (likely(bln_imp && bln_imp->power_on))
+	if (likely(bln_imp && bln_imp->power_on)) {
+#ifdef CONFIG_GENERIC_BLN_USE_WAKELOCK
+		if(use_wakelock && !wake_lock_active(&bln_wake_lock)){
+			wake_lock(&bln_wake_lock);
+		}
+#endif
 		bln_imp->power_on();
+	}
 }
 
 static void bln_power_off(void)
 {
-	if (likely(bln_imp && bln_imp->power_off))
+	if (likely(bln_imp && bln_imp->power_off)) {
 		bln_imp->power_off();
+#ifdef CONFIG_GENERIC_BLN_USE_WAKELOCK
+		if(wake_lock_active(&bln_wake_lock)){
+			wake_unlock(&bln_wake_lock);
+		}
+#endif
+	}
 }
 
 static void bln_early_suspend(struct early_suspend *h)
@@ -278,6 +298,35 @@ static ssize_t led_count_read(struct device *dev,
 	return sprintf(buf,"%u\n", ret);
 }
 
+#ifdef CONFIG_GENERIC_BLN_USE_WAKELOCK
+static ssize_t wakelock_read(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf,"%u\n", (use_wakelock ? 1 : 0));
+}
+
+static ssize_t wakelock_write(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t size)
+{
+	unsigned int data;
+
+	if (sscanf(buf, "%u\n", &data) != 1) {
+			pr_info("%s: input error\n", __FUNCTION__);
+			return size;
+	}
+
+	if (data == 1) {
+		use_wakelock = true;
+	} else if (data == 0) {
+		use_wakelock = false;
+	} else {
+		pr_info("%s: wrong input %u\n", __FUNCTION__, data);
+	}
+
+	return size;
+}
+#endif
+
 #ifdef CONFIG_GENERIC_BLN_EMULATE_BUTTONS_LED
 static ssize_t buttons_led_status_read(struct device *dev,
 		struct device_attribute *attr, char *buf)
@@ -332,6 +381,11 @@ static DEVICE_ATTR(notification_led_mask, S_IRUGO | S_IWUGO,
 		notification_led_mask_write);
 static DEVICE_ATTR(version, S_IRUGO , backlightnotification_version, NULL);
 
+#ifdef CONFIG_GENERIC_BLN_USE_WAKELOCK
+static DEVICE_ATTR(wakelock, S_IRUGO | S_IWUGO, wakelock_read, wakelock_write);
+#endif
+
+
 static struct attribute *bln_notification_attributes[] = {
 	&dev_attr_blink_control.attr,
 	&dev_attr_enabled.attr,
@@ -340,6 +394,9 @@ static struct attribute *bln_notification_attributes[] = {
 	&dev_attr_notification_led_mask.attr,
 #ifdef CONFIG_GENERIC_BLN_EMULATE_BUTTONS_LED
 	&dev_attr_buttons_led.attr,
+#endif
+#ifdef CONFIG_GENERIC_BLN_USE_WAKELOCK
+	&dev_attr_wakelock.attr,
 #endif
 	&dev_attr_version.attr,
 	NULL
@@ -396,7 +453,12 @@ static int __init bln_control_init(void)
 		pr_err("%s sysfs_create_group fail\n", __FUNCTION__);
 		pr_err("Failed to create sysfs group for device (%s)!\n",
 				bln_device.name);
+		return 1;
 	}
+
+#ifdef CONFIG_GENERIC_BLN_USE_WAKELOCK
+	wake_lock_init(&bln_wake_lock, WAKE_LOCK_SUSPEND, "bln_kernel_wake_lock");
+#endif
 
 	register_early_suspend(&bln_suspend_data);
 
